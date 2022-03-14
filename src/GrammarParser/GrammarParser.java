@@ -1,4 +1,4 @@
-// Generated from C:/prog/ITMO/5-term/MT/Lab4\Grammar.g4 by ANTLR 4.9.2
+// Generated from D:/prog/ITMO/5-term/MT/Lab4\Grammar.g4 by ANTLR 4.9.2
 package GrammarParser;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
@@ -17,7 +17,7 @@ public class GrammarParser extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		T__0=1, T__1=2, T__2=3, T__3=4, Name=5, RuleName=6, Literal=7, Action=8, 
+		T__0=1, T__1=2, T__2=3, T__3=4, Name=5, NTerminal=6, Literal=7, Action=8, 
 		Args=9, WS=10, COMMENT=11;
 	public static final int
 		RULE_s = 0, RULE_body = 1, RULE_name = 2, RULE_line = 3, RULE_left = 4, 
@@ -37,7 +37,7 @@ public class GrammarParser extends Parser {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, null, null, null, null, "Name", "RuleName", "Literal", "Action", 
+			null, null, null, null, null, "Name", "NTerminal", "Literal", "Action", 
 			"Args", "WS", "COMMENT"
 		};
 	}
@@ -161,7 +161,7 @@ public class GrammarParser extends Parser {
 			setState(20);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==RuleName) {
+			while (_la==NTerminal) {
 				{
 				{
 				setState(17);
@@ -269,7 +269,7 @@ public class GrammarParser extends Parser {
 	}
 
 	public static class LeftContext extends ParserRuleContext {
-		public TerminalNode RuleName() { return getToken(GrammarParser.RuleName, 0); }
+		public TerminalNode NTerminal() { return getToken(GrammarParser.NTerminal, 0); }
 		public TerminalNode Args() { return getToken(GrammarParser.Args, 0); }
 		public LeftContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -290,7 +290,7 @@ public class GrammarParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(32);
-			match(RuleName);
+			match(NTerminal);
 			setState(34);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -406,12 +406,12 @@ public class GrammarParser extends Parser {
 			setState(49);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << RuleName) | (1L << Literal) | (1L << Action))) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << NTerminal) | (1L << Literal) | (1L << Action))) != 0)) {
 				{
 				setState(47);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
-				case RuleName:
+				case NTerminal:
 					{
 					setState(44);
 					left();

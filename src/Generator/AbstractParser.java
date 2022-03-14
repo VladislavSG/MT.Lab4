@@ -1,3 +1,5 @@
+package Generator;
+
 import java.io.IOException;
 
 public class AbstractParser {
@@ -9,14 +11,14 @@ public class AbstractParser {
     }
 
     char peek() {
-        return pos == src.length() ? 0 : src.charAt(pos);
+        return pos == src.length() ? 0 : src.charAt(pos++);
     }
 
     void expect(String m) throws IOException {
         int startPos = pos;
         for(char c : m.toCharArray()) {
             if (peek() != c)
-                throw new IOException("expected " + m + " at pos: " + pos);
+                throw new IOException("expected " + m + " at pos: " + startPos);
         }
     }
 }

@@ -1,8 +1,10 @@
+package Generator;
+
+import Base.NotTerminal;
 import GrammarParser.GrammarBaseVisitor;
 import GrammarParser.GrammarParser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.BufferedWriter;
@@ -18,7 +20,11 @@ import static org.antlr.v4.runtime.CharStreams.fromFileName;
 
 public class Generator extends GrammarBaseVisitor<Void> {
     StringBuilder s;
-    HashMap<String, HashMap<Integer, List<Character>>> first = new HashMap<>();
+    private final HashMap<NotTerminal, Set<Character>> first;
+
+    public Generator(final ParseTree tree) {
+        first = FirstSetCreate.create(tree);
+    }
 
     private static String bite(String s) {
         if (s.length() < 2) {
@@ -41,7 +47,8 @@ public class Generator extends GrammarBaseVisitor<Void> {
                 Files.createDirectories(path);
                 String name = p.substring(0, p.indexOf('.'));
                 try (BufferedWriter writer = Files.newBufferedWriter(path.resolve(name + ".java"))) {
-                    Generator visitor = new Generator();
+                    HashMap<NotTerminal, Set<Character>> firstSet = FirstSetCreate.create(tree);
+                    Generator visitor = new Generator(tree);
                     visitor.visit(tree);
                     writer.write(visitor.s.toString());
                 }
@@ -56,7 +63,7 @@ public class Generator extends GrammarBaseVisitor<Void> {
         String name = ctx.name().Name().getText();
         s = new StringBuilder("import java.io.IOException; public class ")
             .append(name)
-            .append(" extends AbstractParser { public ")
+            .append(" extends Generator.AbstractParser { public ")
             .append(name)
             .append("(String src) { super(src); } ");
         ctx.body().accept(this);
@@ -66,7 +73,7 @@ public class Generator extends GrammarBaseVisitor<Void> {
 
     @Override
     public Void visitLine(final GrammarParser.LineContext ctx) {
-        s.append("public Node ");
+        s.append("public Generator.Node ");
         ctx.left().accept(this);
         s.append(" throws IOException { ");
         ctx.right().accept(this);
@@ -74,32 +81,12 @@ public class Generator extends GrammarBaseVisitor<Void> {
         return defaultResult();
     }
 
-    public Set<Character> constructFirst(ParseTree term) {
-        int n = term.getChildCount();
-        Set<Character> res = new HashSet<>();
-        for (int i = 0; i < n; ++i) {
-            res.remove((char)0);
-            ParseTree c = term.getChild(i);
-            res.addAll(first(c));
-            if (!res.contains((char)0)) {
-                return res;
-            }
-        }
-        if (term instanceof TerminalNode node &&
-                node.getSymbol().getType() == GrammarParser.Literal) {
-            String text = bite(node.getText());
-            return new HashSet<>(text.isEmpty() ? 0 : text.charAt(0));
-        } else {
-            return new HashSet<>((char)0);
-        }
-    }
-
     @Override
     public Void visitRight(final GrammarParser.RightContext ctx) {
-        s.append("Node node = new Node(); switch(peek()) {");
+        s.append("Generator.Node node = new Generator.Node(); switch(peek()) {");
         for (ParseTree c : ctx.children) {
             if (c instanceof GrammarParser.TermContext term) {
-                char f = first(term);
+                char f = 0; //first.get(term);
                 if (f != 0) {
                     s.append("case('")
                             .append(f)
@@ -126,8 +113,8 @@ public class Generator extends GrammarBaseVisitor<Void> {
                         s.append(bite(a));
                     } else {
                         s.append("expect(\"")
-                                .append(bite(a))
-                                .append("\");");
+                            .append(bite(a))
+                            .append("\");");
                     }
                 } else {
                     s.append("node.add(");
@@ -151,7 +138,7 @@ public class Generator extends GrammarBaseVisitor<Void> {
 
     @Override
     public Void visitLeft(final GrammarParser.LeftContext ctx) {
-        String name = "rule" + ctx.RuleName().getText().toUpperCase();
+        String name = "rule" + ctx.NTerminal().getText().toUpperCase();
         s.append(name).append('(');
         TerminalNode args = ctx.Args();
         if (args != null) {

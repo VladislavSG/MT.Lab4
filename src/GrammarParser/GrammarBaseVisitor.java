@@ -1,4 +1,4 @@
-// Generated from C:/prog/ITMO/5-term/MT/Lab4\Grammar.g4 by ANTLR 4.9.2
+// Generated from D:/prog/ITMO/5-term/MT/Lab4\Grammar.g4 by ANTLR 4.9.2
 package GrammarParser;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 

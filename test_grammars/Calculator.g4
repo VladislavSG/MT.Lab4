@@ -1,6 +1,6 @@
 grammar Calculator;
 
-e[Integer res;] : {Integer a = 0;} s[a] s0[a] {res = a};
+e[Integer res] : {Integer a = 0;} s[a] s0[a] {res = a};
 
 s0[Integer a] : '+' {Integer next = 0;} s[next] {a += next;} s0[a] | ;
 s[Integer res] : {Integer b = 1;} m[b] m0[b] {res += b;} ;
