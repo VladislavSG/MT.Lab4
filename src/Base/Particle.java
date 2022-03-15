@@ -9,7 +9,7 @@ public class Particle {
         this.name = name;
     }
 
-    public String getName() {
+    public String getText() {
         return name;
     }
 

@@ -11,7 +11,7 @@ public class AbstractParser {
     }
 
     char peek() {
-        return pos == src.length() ? 0 : src.charAt(pos++);
+        return pos == src.length() ? 0 : src.charAt(pos);
     }
 
     void expect(String m) throws IOException {
@@ -19,6 +19,7 @@ public class AbstractParser {
         for(char c : m.toCharArray()) {
             if (peek() != c)
                 throw new IOException("expected " + m + " at pos: " + startPos);
+            pos += 1;
         }
     }
 }

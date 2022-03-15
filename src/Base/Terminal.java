@@ -8,7 +8,7 @@ public class Terminal extends Particle {
     @Override
     public boolean equals(final Object obj) {
         if (obj instanceof Terminal) {
-            return ((Terminal) obj).getName().equals(getName());
+            return ((Terminal) obj).getText().equals(getText());
         } else {
             return false;
         }

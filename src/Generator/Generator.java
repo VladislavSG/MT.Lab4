@@ -1,7 +1,6 @@
 package Generator;
 
-import Base.NotTerminal;
-import GrammarParser.GrammarBaseVisitor;
+import Base.*;
 import GrammarParser.GrammarParser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -11,27 +10,65 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
 
 import GrammarParser.*;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 import static org.antlr.v4.runtime.CharStreams.fromFileName;
 
-public class Generator extends GrammarBaseVisitor<Void> {
+public class Generator {
     StringBuilder s;
-    private final HashMap<NotTerminal, Set<Character>> first;
+    private final PreVisitor preVisitor;
 
     public Generator(final ParseTree tree) {
-        first = FirstSetCreate.create(tree);
+        if (tree instanceof GrammarParser.SContext sContext) {
+            preVisitor = new PreVisitor(tree);
+            gen(sContext);
+        } else {
+            throw new IllegalArgumentException("not S nterm");
+        }
     }
 
-    private static String bite(String s) {
-        if (s.length() < 2) {
-            return "";
-        } else {
-            return s.substring(1, s.length() - 1);
+    private void gen(final GrammarParser.SContext ctx) {
+        String name = ctx.name().Name().getText();
+        s = new StringBuilder("import java.io.IOException; public class ")
+                .append(name)
+                .append(" extends Generator.AbstractParser { public ")
+                .append(name)
+                .append("(String src) { super(src); } ");
+        genBody();
+        s.append('}');
+    }
+
+    private void genBody() {
+        for (final Rule r : preVisitor.lines) {
+            genRule(r);
         }
+    }
+
+    private void genRule(Rule r) {
+        s.append("public void ")
+            .append(r.left.getText())
+            .append(" throws IOException { switch(peek()) {");
+        for (Term t : r.alts) {
+            for (char c : preVisitor.calc_first(t.getAlternative())) {
+                s.append("case(").append(c).append("): ");
+            }
+            s.append(" { ");
+            for (Particle p : t.getAlternative()) {
+                if (p instanceof Terminal) {
+                    s.append("expected(\"").append(p.getText()).append("\")");
+                } else if (p instanceof NotTerminal nt) {
+                    s.append(nt.getText())
+                            .append("(")
+                            .append(nt.getArguments())
+                            .append(")");
+                } else {
+                    s.append(p.getText());
+                }
+            }
+            s.append("; break; } ");
+        }
+        s.append("default: throw new IOException(); } }");
     }
 
     public static void main(String[] args) {
@@ -47,105 +84,12 @@ public class Generator extends GrammarBaseVisitor<Void> {
                 Files.createDirectories(path);
                 String name = p.substring(0, p.indexOf('.'));
                 try (BufferedWriter writer = Files.newBufferedWriter(path.resolve(name + ".java"))) {
-                    HashMap<NotTerminal, Set<Character>> firstSet = FirstSetCreate.create(tree);
                     Generator visitor = new Generator(tree);
-                    visitor.visit(tree);
                     writer.write(visitor.s.toString());
                 }
             } catch (IOException e) {
                 System.err.println("error with file " + p);
             }
         }
-    }
-
-    @Override
-    public Void visitS(final GrammarParser.SContext ctx) {
-        String name = ctx.name().Name().getText();
-        s = new StringBuilder("import java.io.IOException; public class ")
-            .append(name)
-            .append(" extends Generator.AbstractParser { public ")
-            .append(name)
-            .append("(String src) { super(src); } ");
-        ctx.body().accept(this);
-        s.append('}');
-        return defaultResult();
-    }
-
-    @Override
-    public Void visitLine(final GrammarParser.LineContext ctx) {
-        s.append("public Generator.Node ");
-        ctx.left().accept(this);
-        s.append(" throws IOException { ");
-        ctx.right().accept(this);
-        s.append(" } ");
-        return defaultResult();
-    }
-
-    @Override
-    public Void visitRight(final GrammarParser.RightContext ctx) {
-        s.append("Generator.Node node = new Generator.Node(); switch(peek()) {");
-        for (ParseTree c : ctx.children) {
-            if (c instanceof GrammarParser.TermContext term) {
-                char f = 0; //first.get(term);
-                if (f != 0) {
-                    s.append("case('")
-                            .append(f)
-                            .append("')");
-                } else {
-                    s.append("default");
-                }
-                s.append(": {");
-                term.accept(this);
-                s.append("break; }");
-            }
-        }
-        s.append("} return node;");
-        return defaultResult();
-    }
-
-    @Override
-    public Void visitTerm(final GrammarParser.TermContext ctx) {
-        if (ctx.children != null) {
-            for (ParseTree c : ctx.children) {
-                if (c instanceof TerminalNode terminal) {
-                    String a = terminal.getText();
-                    if (terminal.getSymbol().getType() == GrammarParser.Action) {
-                        s.append(bite(a));
-                    } else {
-                        s.append("expect(\"")
-                            .append(bite(a))
-                            .append("\");");
-                    }
-                } else {
-                    s.append("node.add(");
-                    c.accept(this);
-                    s.append(");");
-                }
-            }
-        }
-        return defaultResult();
-    }
-
-    //    @Override
-//    public Void visitBody(final GrammarParser.BodyContext ctx) {
-//        for (ParseTree l : ctx.children) {
-//            assert(l instanceof GrammarParser.LineContext);
-//            GrammarParser.LineContext ruleCtx = (GrammarParser.LineContext) l;
-//            rules.put(ruleCtx.left().RuleName().getText(), );
-//        }
-//        return super.visitBody(ctx);
-//    }
-
-    @Override
-    public Void visitLeft(final GrammarParser.LeftContext ctx) {
-        String name = "rule" + ctx.NTerminal().getText().toUpperCase();
-        s.append(name).append('(');
-        TerminalNode args = ctx.Args();
-        if (args != null) {
-            String a = args.getText();
-            s.append(a, 1, a.length()-1);
-        }
-        s.append(")");
-        return defaultResult();
     }
 }
