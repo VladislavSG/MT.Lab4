@@ -10,6 +10,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Collectors;
 
 import GrammarParser.*;
 
@@ -32,9 +33,17 @@ public class Generator {
         String name = ctx.name().Name().getText();
         s = new StringBuilder("import java.io.IOException; public class ")
                 .append(name)
-                .append(" extends Generator.AbstractParser { public ")
+                .append(" extends Generator.AbstractParser { ");
+        s.append("private static String[] lexems = new String[] {");
+        s.append(preVisitor.literals
+                .keySet()
+                .stream()
+                .map(s -> "\"" + s.getText() + "\"")
+                .collect(Collectors.joining(", ")));
+        s.append("}; public ")
                 .append(name)
-                .append("(String src) { super(src); } ");
+                .append("(String src) { super(src); } ")
+                .append("protected int nexttoken() throws IOException { return super.nexttoken(lexems); } ");
         genBody();
         s.append('}');
     }
@@ -48,27 +57,44 @@ public class Generator {
     private void genRule(Rule r) {
         s.append("public void ")
             .append(r.left.getText())
-            .append(" throws IOException { switch(peek()) {");
+            .append("(");
+        if (r.left.getArguments() != null) {
+            s.append(r.left.getArguments());
+        }
+        s.append(") throws IOException { switch(peek()) {");
+        boolean hasEps = false;
         for (Term t : r.alts) {
-            for (char c : preVisitor.calc_first(t.getAlternative())) {
-                s.append("case(").append(c).append("): ");
+            boolean hasNotEps = false;
+            for (int c : preVisitor.calc_first(t.getAlternative())) {
+                if (c == 0) {
+                    hasEps = true;
+                } else {
+                    hasNotEps = true;
+                    s.append("case(").append(c).append("): ");
+                }
             }
+            if (!hasNotEps) continue;
             s.append(" { ");
             for (Particle p : t.getAlternative()) {
-                if (p instanceof Terminal) {
-                    s.append("expected(\"").append(p.getText()).append("\")");
+                if (p instanceof Literal literal) {
+                    s.append("expected(").append(preVisitor.literals.get(literal)).append("); ");
                 } else if (p instanceof NotTerminal nt) {
-                    s.append(nt.getText())
-                            .append("(")
-                            .append(nt.getArguments())
-                            .append(")");
+                    s.append(nt.getText()).append("(");
+                    String args = nt.getArguments();
+                    if (args != null) {
+                        s.append(args);
+                    }
+                    s.append("); ");
                 } else {
                     s.append(p.getText());
                 }
             }
-            s.append("; break; } ");
+            s.append("break; } ");
         }
-        s.append("default: throw new IOException(); } }");
+        if (!hasEps) {
+            s.append("default: throw new IOException(); ");
+        }
+        s.append("} }");
     }
 
     public static void main(String[] args) {

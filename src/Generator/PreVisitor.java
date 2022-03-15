@@ -1,30 +1,33 @@
 package Generator;
 
 import Base.*;
-import GrammarParser.GrammarBaseVisitor;
-import GrammarParser.GrammarParser;
+import GrammarParser.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import GrammarParser.GrammarLexer;
+
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class PreVisitor {
-    public final HashMap<NotTerminal, Set<Character>> first = new HashMap<>();
-    public final List<Rule> lines = new ArrayList<>();
-    public static final Character EPS = 0;
+import static Generator.Utilities.bite;
 
-    private class Initializer extends GrammarBaseVisitor<HashMap<NotTerminal, Set<Character>>> {
+public class PreVisitor {
+    public final HashMap<NotTerminal, Set<Integer>> first = new HashMap<>();
+    public final List<Rule> lines = new ArrayList<>();
+    public final Map<Literal, Integer> literals = new HashMap<>();
+    public static final Integer EPS = -1;
+
+    private class Initializer extends GrammarBaseVisitor<HashMap<NotTerminal, Set<Integer>>> {
+
         public Initializer(final ParseTree tree) {
             visit(tree);
             boolean chg = true;
             while (chg) {
                 chg = false;
                 for (final Rule r : lines) {
-                    final Set<Character> x = first.get(r.left);
+                    final Set<Integer> x = first.get(r.left);
                     for (final Term term : r.alts) {
-                        final Set<Character> y = calc_first(term.getAlternative());
+                        final Set<Integer> y = calc_first(term.getAlternative());
                         chg |= !x.containsAll(y);
                         x.addAll(y);
                     }
@@ -32,44 +35,63 @@ public class PreVisitor {
             }
         }
 
+        public Particle convert(final ParseTree tree) {
+            if (tree instanceof TerminalNode) {
+                String s = bite(tree.getText());
+                if (((TerminalNode) tree).getSymbol().getType() == GrammarLexer.Action) {
+                    return new Action(s);
+                }
+                if (((TerminalNode) tree).getSymbol().getType() == GrammarLexer.Literal) {
+                    Literal l = new Literal(s);
+                    literals.putIfAbsent(l, literals.size());
+                    return l;
+                }
+            }
+            if (tree instanceof GrammarParser.LeftContext leftContext) {
+                return new NotTerminal(leftContext);
+            }
+            throw new IllegalArgumentException();
+        }
+
         @Override
-        public HashMap<NotTerminal, Set<Character>> visitLine(final GrammarParser.LineContext ctx) {
+        public HashMap<NotTerminal, Set<Integer>> visitLine(final GrammarParser.LineContext ctx) {
             NotTerminal left = new NotTerminal(ctx.left());
             first.computeIfAbsent(left, k -> new HashSet<>());
             List<Term> alts = new ArrayList<>();
             for (final GrammarParser.TermContext t : ctx.right().term()) {
                 Stream<ParseTree> streamParticles = (t.children == null) ? Stream.empty() : t.children.stream();
                 List<Particle> alternative = streamParticles
-                                                .map(Utilities::convert)
+                                                .map(this::convert)
                                                 .toList();
                 alts.add(new Term(alternative));
             }
-            lines.add(new Rule(left, alts));
+            String local = ctx.Args() == null ? null : bite(ctx.Args().getText());
+            lines.add(new Rule(left, alts, local));
             return super.visitLine(ctx);
         }
 
         @Override
-        protected HashMap<NotTerminal, Set<Character>> defaultResult() {
+        protected HashMap<NotTerminal, Set<Integer>> defaultResult() {
             return first;
         }
     }
 
-    public Set<Character> calc_first(List<Particle> x) {
+    public Set<Integer> calc_first(List<Particle> x) {
         x = x.stream().filter(Predicate.not(Action.class::isInstance)).toList();
         return calc_first_b(x);
     }
 
-    private Set<Character> calc_first_b(List<Particle> x) {
+    private Set<Integer> calc_first_b(List<Particle> x) {
         if (x.isEmpty()) {
             return Collections.singleton(EPS);
         } else {
             final Particle p = x.get(0);
             final String name = p.getText();
             assert (name.length() > 0);
-            if (p instanceof Terminal) {
-                return Collections.singleton(name.charAt(0));
+            if (p instanceof Literal) {
+                return Collections.singleton(literals.get(p));
             } else {
-                Set<Character> next = first.get((NotTerminal) p);
+                Set<Integer> next = first.get((NotTerminal) p);
                 if (next.remove(EPS)) {
                     next.addAll(calc_first_b(x.subList(1, x.size())));
                 }

@@ -16,7 +16,7 @@ public class NotTerminal extends Particle {
     }
 
     public NotTerminal(final GrammarParser.LeftContext ctx) {
-        this(ctx.NTerminal().getText().toUpperCase(),
+        this(ctx.NTerminal().getText(),
              ctx.Args() == null ? null : Utilities.bite(ctx.Args().getText()));
     }
 

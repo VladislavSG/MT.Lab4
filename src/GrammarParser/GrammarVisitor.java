@@ -29,6 +29,12 @@ public interface GrammarVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitName(GrammarParser.NameContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link GrammarParser#lexem}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLexem(GrammarParser.LexemContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link GrammarParser#line}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

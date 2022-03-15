@@ -17,28 +17,28 @@ public class GrammarParser extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		T__0=1, T__1=2, T__2=3, T__3=4, Name=5, NTerminal=6, Literal=7, Action=8, 
-		Args=9, WS=10, COMMENT=11;
+		T__0=1, T__1=2, T__2=3, T__3=4, Local=5, Name=6, NTerminal=7, Literal=8, 
+		Action=9, Args=10, WS=11, COMMENT=12;
 	public static final int
-		RULE_s = 0, RULE_body = 1, RULE_name = 2, RULE_line = 3, RULE_left = 4, 
-		RULE_right = 5, RULE_term = 6;
+		RULE_s = 0, RULE_body = 1, RULE_name = 2, RULE_lexem = 3, RULE_line = 4, 
+		RULE_left = 5, RULE_right = 6, RULE_term = 7;
 	private static String[] makeRuleNames() {
 		return new String[] {
-			"s", "body", "name", "line", "left", "right", "term"
+			"s", "body", "name", "lexem", "line", "left", "right", "term"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'grammar'", "';'", "':'", "'|'"
+			null, "'grammar'", "';'", "':'", "'|'", "'local'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, null, null, null, null, "Name", "NTerminal", "Literal", "Action", 
-			"Args", "WS", "COMMENT"
+			null, null, null, null, null, "Local", "Name", "NTerminal", "Literal", 
+			"Action", "Args", "WS", "COMMENT"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -116,9 +116,9 @@ public class GrammarParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(14);
+			setState(16);
 			name();
-			setState(15);
+			setState(17);
 			body();
 			}
 		}
@@ -140,6 +140,12 @@ public class GrammarParser extends Parser {
 		public LineContext line(int i) {
 			return getRuleContext(LineContext.class,i);
 		}
+		public List<LexemContext> lexem() {
+			return getRuleContexts(LexemContext.class);
+		}
+		public LexemContext lexem(int i) {
+			return getRuleContext(LexemContext.class,i);
+		}
 		public BodyContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -158,17 +164,31 @@ public class GrammarParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(20);
+			setState(23);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==NTerminal) {
+			while (_la==Name || _la==NTerminal) {
 				{
-				{
-				setState(17);
-				line();
+				setState(21);
+				_errHandler.sync(this);
+				switch (_input.LA(1)) {
+				case NTerminal:
+					{
+					setState(19);
+					line();
+					}
+					break;
+				case Name:
+					{
+					setState(20);
+					lexem();
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 				}
 				}
-				setState(22);
+				setState(25);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -204,12 +224,51 @@ public class GrammarParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(23);
+			setState(26);
 			match(T__0);
-			setState(24);
+			setState(27);
 			match(Name);
-			setState(25);
+			setState(28);
 			match(T__1);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class LexemContext extends ParserRuleContext {
+		public TerminalNode Name() { return getToken(GrammarParser.Name, 0); }
+		public TerminalNode Literal() { return getToken(GrammarParser.Literal, 0); }
+		public LexemContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_lexem; }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof GrammarVisitor ) return ((GrammarVisitor<? extends T>)visitor).visitLexem(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final LexemContext lexem() throws RecognitionException {
+		LexemContext _localctx = new LexemContext(_ctx, getState());
+		enterRule(_localctx, 6, RULE_lexem);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(30);
+			match(Name);
+			setState(31);
+			match(T__2);
+			setState(32);
+			match(Literal);
 			}
 		}
 		catch (RecognitionException re) {
@@ -230,6 +289,8 @@ public class GrammarParser extends Parser {
 		public RightContext right() {
 			return getRuleContext(RightContext.class,0);
 		}
+		public TerminalNode Local() { return getToken(GrammarParser.Local, 0); }
+		public TerminalNode Args() { return getToken(GrammarParser.Args, 0); }
 		public LineContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -243,17 +304,30 @@ public class GrammarParser extends Parser {
 
 	public final LineContext line() throws RecognitionException {
 		LineContext _localctx = new LineContext(_ctx, getState());
-		enterRule(_localctx, 6, RULE_line);
+		enterRule(_localctx, 8, RULE_line);
+		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(27);
+			setState(34);
 			left();
-			setState(28);
+			setState(37);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==Local) {
+				{
+				setState(35);
+				match(Local);
+				setState(36);
+				match(Args);
+				}
+			}
+
+			setState(39);
 			match(T__2);
-			setState(29);
+			setState(40);
 			right();
-			setState(30);
+			setState(41);
 			match(T__1);
 			}
 		}
@@ -284,19 +358,19 @@ public class GrammarParser extends Parser {
 
 	public final LeftContext left() throws RecognitionException {
 		LeftContext _localctx = new LeftContext(_ctx, getState());
-		enterRule(_localctx, 8, RULE_left);
+		enterRule(_localctx, 10, RULE_left);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(32);
+			setState(43);
 			match(NTerminal);
-			setState(34);
+			setState(45);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			if (_la==Args) {
 				{
-				setState(33);
+				setState(44);
 				match(Args);
 				}
 			}
@@ -334,26 +408,26 @@ public class GrammarParser extends Parser {
 
 	public final RightContext right() throws RecognitionException {
 		RightContext _localctx = new RightContext(_ctx, getState());
-		enterRule(_localctx, 10, RULE_right);
+		enterRule(_localctx, 12, RULE_right);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(36);
+			setState(47);
 			term();
-			setState(41);
+			setState(52);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==T__3) {
 				{
 				{
-				setState(37);
+				setState(48);
 				match(T__3);
-				setState(38);
+				setState(49);
 				term();
 				}
 				}
-				setState(43);
+				setState(54);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -398,34 +472,34 @@ public class GrammarParser extends Parser {
 
 	public final TermContext term() throws RecognitionException {
 		TermContext _localctx = new TermContext(_ctx, getState());
-		enterRule(_localctx, 12, RULE_term);
+		enterRule(_localctx, 14, RULE_term);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(49);
+			setState(60);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << NTerminal) | (1L << Literal) | (1L << Action))) != 0)) {
 				{
-				setState(47);
+				setState(58);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case NTerminal:
 					{
-					setState(44);
+					setState(55);
 					left();
 					}
 					break;
 				case Literal:
 					{
-					setState(45);
+					setState(56);
 					match(Literal);
 					}
 					break;
 				case Action:
 					{
-					setState(46);
+					setState(57);
 					match(Action);
 					}
 					break;
@@ -433,7 +507,7 @@ public class GrammarParser extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(51);
+				setState(62);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -451,20 +525,23 @@ public class GrammarParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\r\67\4\2\t\2\4\3"+
-		"\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\3\2\3\2\3\2\3\3\7\3\25\n"+
-		"\3\f\3\16\3\30\13\3\3\4\3\4\3\4\3\4\3\5\3\5\3\5\3\5\3\5\3\6\3\6\5\6%\n"+
-		"\6\3\7\3\7\3\7\7\7*\n\7\f\7\16\7-\13\7\3\b\3\b\3\b\7\b\62\n\b\f\b\16\b"+
-		"\65\13\b\3\b\2\2\t\2\4\6\b\n\f\16\2\2\2\65\2\20\3\2\2\2\4\26\3\2\2\2\6"+
-		"\31\3\2\2\2\b\35\3\2\2\2\n\"\3\2\2\2\f&\3\2\2\2\16\63\3\2\2\2\20\21\5"+
-		"\6\4\2\21\22\5\4\3\2\22\3\3\2\2\2\23\25\5\b\5\2\24\23\3\2\2\2\25\30\3"+
-		"\2\2\2\26\24\3\2\2\2\26\27\3\2\2\2\27\5\3\2\2\2\30\26\3\2\2\2\31\32\7"+
-		"\3\2\2\32\33\7\7\2\2\33\34\7\4\2\2\34\7\3\2\2\2\35\36\5\n\6\2\36\37\7"+
-		"\5\2\2\37 \5\f\7\2 !\7\4\2\2!\t\3\2\2\2\"$\7\b\2\2#%\7\13\2\2$#\3\2\2"+
-		"\2$%\3\2\2\2%\13\3\2\2\2&+\5\16\b\2\'(\7\6\2\2(*\5\16\b\2)\'\3\2\2\2*"+
-		"-\3\2\2\2+)\3\2\2\2+,\3\2\2\2,\r\3\2\2\2-+\3\2\2\2.\62\5\n\6\2/\62\7\t"+
-		"\2\2\60\62\7\n\2\2\61.\3\2\2\2\61/\3\2\2\2\61\60\3\2\2\2\62\65\3\2\2\2"+
-		"\63\61\3\2\2\2\63\64\3\2\2\2\64\17\3\2\2\2\65\63\3\2\2\2\7\26$+\61\63";
+		"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\16B\4\2\t\2\4\3\t"+
+		"\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\3\2\3\2\3\2\3\3\3\3"+
+		"\7\3\30\n\3\f\3\16\3\33\13\3\3\4\3\4\3\4\3\4\3\5\3\5\3\5\3\5\3\6\3\6\3"+
+		"\6\5\6(\n\6\3\6\3\6\3\6\3\6\3\7\3\7\5\7\60\n\7\3\b\3\b\3\b\7\b\65\n\b"+
+		"\f\b\16\b8\13\b\3\t\3\t\3\t\7\t=\n\t\f\t\16\t@\13\t\3\t\2\2\n\2\4\6\b"+
+		"\n\f\16\20\2\2\2A\2\22\3\2\2\2\4\31\3\2\2\2\6\34\3\2\2\2\b \3\2\2\2\n"+
+		"$\3\2\2\2\f-\3\2\2\2\16\61\3\2\2\2\20>\3\2\2\2\22\23\5\6\4\2\23\24\5\4"+
+		"\3\2\24\3\3\2\2\2\25\30\5\n\6\2\26\30\5\b\5\2\27\25\3\2\2\2\27\26\3\2"+
+		"\2\2\30\33\3\2\2\2\31\27\3\2\2\2\31\32\3\2\2\2\32\5\3\2\2\2\33\31\3\2"+
+		"\2\2\34\35\7\3\2\2\35\36\7\b\2\2\36\37\7\4\2\2\37\7\3\2\2\2 !\7\b\2\2"+
+		"!\"\7\5\2\2\"#\7\n\2\2#\t\3\2\2\2$\'\5\f\7\2%&\7\7\2\2&(\7\f\2\2\'%\3"+
+		"\2\2\2\'(\3\2\2\2()\3\2\2\2)*\7\5\2\2*+\5\16\b\2+,\7\4\2\2,\13\3\2\2\2"+
+		"-/\7\t\2\2.\60\7\f\2\2/.\3\2\2\2/\60\3\2\2\2\60\r\3\2\2\2\61\66\5\20\t"+
+		"\2\62\63\7\6\2\2\63\65\5\20\t\2\64\62\3\2\2\2\658\3\2\2\2\66\64\3\2\2"+
+		"\2\66\67\3\2\2\2\67\17\3\2\2\28\66\3\2\2\29=\5\f\7\2:=\7\n\2\2;=\7\13"+
+		"\2\2<9\3\2\2\2<:\3\2\2\2<;\3\2\2\2=@\3\2\2\2><\3\2\2\2>?\3\2\2\2?\21\3"+
+		"\2\2\2@>\3\2\2\2\t\27\31\'/\66<>";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

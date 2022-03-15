@@ -1,13 +1,15 @@
 grammar Grammar;
 
 s : name body ;
-body : line* ;
+body : (line | lexem)* ;
 name : 'grammar' Name ';';
-line : left ':' right ';' ;
+lexem : Name ':' Literal;
+line : left (Local Args)? ':' right ';';
 left : NTerminal Args? ;
 right : term ('|' term)* ;
 term : (left | Literal | Action)* ;
 
+Local : 'local' ;
 Name : [A-Z][a-z0-9]* ;
 NTerminal : [a-z][a-z0-9]* ;
 Literal : '\'' ('\\\'' | ~['])+ '\'' ;
