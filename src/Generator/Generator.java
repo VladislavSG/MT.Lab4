@@ -10,6 +10,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import GrammarParser.*;
@@ -31,7 +32,7 @@ public class Generator {
 
     private void gen(final GrammarParser.SContext ctx) {
         String name = ctx.name().Name().getText();
-        s = new StringBuilder("import java.io.IOException; public class ")
+        s = new StringBuilder("import java.io.IOException; import Generator.RuleContext; public class ")
                 .append(name)
                 .append(" extends Generator.AbstractParser { ");
         s.append("private static String[] lexems = new String[] {");
@@ -48,32 +49,50 @@ public class Generator {
         s.append('}');
     }
 
+    private static String ctxName(NotTerminal nt) {
+        return nt.getText() + "Context";
+    }
+
+    private void genContexts(Rule r) {
+        String name = ctxName(r.left);
+        s.append("public class ")
+                .append(name)
+                .append(" extends RuleContext { ");
+        if (r.local != null) {
+            s.append(r.local.replaceAll(",", ";")).append(";");
+        }
+        s.append("public ")
+                .append(name)
+                .append("() { super(curContext); curContext = this; } } ");
+    }
+
     private void genBody() {
         for (final Rule r : preVisitor.lines) {
+            genContexts(r);
             genRule(r);
         }
     }
 
     private void genRule(Rule r) {
-        s.append("public void ")
+        s.append("public ")
+            .append(ctxName(r.left)).append(" ")
             .append(r.left.getText())
             .append("(");
         if (r.left.getArguments() != null) {
             s.append(r.left.getArguments());
         }
-        s.append(") throws IOException { switch(peek()) {");
-        boolean hasEps = false;
+        String ctxName = ctxName(r.left);
+        s.append(") throws IOException { ")
+                .append(ctxName)
+                .append(" ctx = new ").append(ctxName).append("() ; switch(peek()) {");
         for (Term t : r.alts) {
-            boolean hasNotEps = false;
             for (int c : preVisitor.calc_first(t.getAlternative())) {
-                if (c == 0) {
-                    hasEps = true;
+                if (c == -1) {
+                    s.append("default: ");
                 } else {
-                    hasNotEps = true;
                     s.append("case(").append(c).append("): ");
                 }
             }
-            if (!hasNotEps) continue;
             s.append(" { ");
             for (Particle p : t.getAlternative()) {
                 if (p instanceof Literal literal) {
@@ -82,19 +101,31 @@ public class Generator {
                     s.append(nt.getText()).append("(");
                     String args = nt.getArguments();
                     if (args != null) {
-                        s.append(args);
+                        s.append(process(args, t));
                     }
                     s.append("); ");
                 } else {
-                    s.append(p.getText());
+                    s.append(process(p.getText(), t));
                 }
             }
             s.append("break; } ");
         }
-        if (!hasEps) {
-            s.append("default: throw new IOException(); ");
-        }
-        s.append("} }");
+        s.append("} exitRule(ctx); return ctx; }");
+    }
+
+
+    private static String process(String action, Term term) {
+        String x = action.replaceAll("\\$([a-z]\\w*)::(\\w+)", "(($1Context)getContext($1Context.class)).$2");
+        return Pattern.compile("\\$(\\d+).(\\w+)").matcher(x).replaceAll(matchResult -> {
+            String className = ctxName(term
+                    .getAlternative()
+                    .stream()
+                    .filter(p -> (p instanceof NotTerminal))
+                    .map(p -> (NotTerminal)p)
+                    .toList()
+                    .get(Integer.parseInt(matchResult.group(1))));
+            return "((" + className +")ctx.children.get($1)).$2";
+        }).replaceAll("\\$(\\w+)", "ctx.$1");
     }
 
     public static void main(String[] args) {

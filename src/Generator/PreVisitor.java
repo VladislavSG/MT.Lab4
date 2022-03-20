@@ -14,7 +14,7 @@ import static Generator.Utilities.bite;
 public class PreVisitor {
     public final HashMap<NotTerminal, Set<Integer>> first = new HashMap<>();
     public final List<Rule> lines = new ArrayList<>();
-    public final Map<Literal, Integer> literals = new HashMap<>();
+    public final Map<Literal, Integer> literals = new LinkedHashMap<>();
     public static final Integer EPS = -1;
 
     private class Initializer extends GrammarBaseVisitor<HashMap<NotTerminal, Set<Integer>>> {

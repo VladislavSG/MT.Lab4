@@ -5,17 +5,42 @@ import java.io.IOException;
 public abstract class AbstractParser {
     protected final String src;
     protected int pos = 0;
-    private int curToken = -1;
+    private int curToken = -2;
+    protected RuleContext curContext;
+
+    protected void exitRule(final RuleContext ctx) {
+        curContext = curContext.parent;
+        if (curContext != null) {
+            curContext.children.add(ctx);
+        }
+    }
 
     public AbstractParser(final String src) {
         this.src = src;
     }
 
-    protected int peek() throws IOException {
-        if (curToken == -1) {
-            curToken = nexttoken();
+    protected RuleContext getContext(Class<?> token) {
+        return getContext(token, 0);
+    }
+
+    protected RuleContext getContext(Class<?> token, int n) {
+        for (RuleContext x = curContext; x != null; x = x.parent) {
+            if (token.isInstance(x)) {
+                if (n == 0) {
+                    return x;
+                } else {
+                    n -= 1;
+                }
+            }
         }
-        return pos == src.length() ? 0 : nexttoken();
+        return null;
+    }
+
+    protected int peek() throws IOException {
+        if (curToken == -2) {
+            nexttoken();
+        }
+        return curToken;
     }
 
     protected void expected(int m) throws IOException {
@@ -31,6 +56,9 @@ public abstract class AbstractParser {
     protected abstract int nexttoken() throws IOException;
 
     protected int nexttoken(String[] lexems) throws IOException {
+        if (curToken == -1) {
+            return -1;
+        }
         for(int i = 0; i < lexems.length; ++i) {
             if (test(lexems[i])) {
                 pos += lexems[i].length();
@@ -39,6 +67,7 @@ public abstract class AbstractParser {
                 return prev;
             }
         }
-        throw new IOException("unknown token");
+        curToken = -1;
+        return curToken;
     }
 }
