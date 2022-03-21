@@ -1,6 +1,6 @@
-/testout/
 *.jar
 *.iml
 /out/
 /gen/
 .idea
+/test_out/
