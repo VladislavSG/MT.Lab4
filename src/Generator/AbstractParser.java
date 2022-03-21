@@ -5,18 +5,18 @@ import java.io.IOException;
 public abstract class AbstractParser {
     protected final String src;
     protected int pos = 0;
-    private int curToken = -2;
     protected RuleContext curContext;
+    private int curToken = -2;
+
+    public AbstractParser(final String src) {
+        this.src = src;
+    }
 
     protected void exitRule(final RuleContext ctx) {
         curContext = curContext.parent;
         if (curContext != null) {
             curContext.children.add(ctx);
         }
-    }
-
-    public AbstractParser(final String src) {
-        this.src = src;
     }
 
     protected RuleContext getContext(Class<?> token) {
@@ -55,11 +55,16 @@ public abstract class AbstractParser {
 
     protected abstract int nexttoken() throws IOException;
 
+    //TODO lexer class
     protected int nexttoken(String[] lexems) throws IOException {
         if (curToken == -1) {
             return -1;
         }
-        for(int i = 0; i < lexems.length; ++i) {
+        if (pos == src.length()) {
+            curToken = -1;
+            return curToken;
+        }
+        for (int i = 0; i < lexems.length; ++i) {
             if (test(lexems[i])) {
                 pos += lexems[i].length();
                 int prev = curToken;
@@ -67,7 +72,6 @@ public abstract class AbstractParser {
                 return prev;
             }
         }
-        curToken = -1;
-        return curToken;
+        throw new IOException("can't recognize next token");
     }
 }

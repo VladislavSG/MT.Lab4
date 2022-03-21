@@ -1,7 +1,9 @@
 package Generator;
 
 import Base.*;
-import GrammarParser.*;
+import GrammarParser.GrammarBaseVisitor;
+import GrammarParser.GrammarLexer;
+import GrammarParser.GrammarParser;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -12,10 +14,38 @@ import java.util.stream.Stream;
 import static Generator.Utilities.bite;
 
 public class PreVisitor {
+    public static final Integer EPS = -1;
     public final HashMap<NotTerminal, Set<Integer>> first = new HashMap<>();
     public final List<Rule> lines = new ArrayList<>();
     public final Map<Literal, Integer> literals = new LinkedHashMap<>();
-    public static final Integer EPS = -1;
+
+    public PreVisitor(final ParseTree tree) {
+        new Initializer(tree);
+    }
+
+    public Set<Integer> calc_first(List<Particle> x) {
+        x = x.stream().filter(Predicate.not(Action.class::isInstance)).toList();
+        return calc_first_b(x);
+    }
+
+    private Set<Integer> calc_first_b(List<Particle> x) {
+        if (x.isEmpty()) {
+            return Collections.singleton(EPS);
+        } else {
+            final Particle p = x.get(0);
+            final String name = p.getText();
+            assert (name.length() > 0);
+            if (p instanceof Literal) {
+                return Collections.singleton(literals.get(p));
+            } else {
+                Set<Integer> next = first.get((NotTerminal) p);
+                if (next.remove(EPS)) {
+                    next.addAll(calc_first_b(x.subList(1, x.size())));
+                }
+                return next;
+            }
+        }
+    }
 
     private class Initializer extends GrammarBaseVisitor<HashMap<NotTerminal, Set<Integer>>> {
 
@@ -61,8 +91,8 @@ public class PreVisitor {
             for (final GrammarParser.TermContext t : ctx.right().term()) {
                 Stream<ParseTree> streamParticles = (t.children == null) ? Stream.empty() : t.children.stream();
                 List<Particle> alternative = streamParticles
-                                                .map(this::convert)
-                                                .toList();
+                        .map(this::convert)
+                        .toList();
                 alts.add(new Term(alternative));
             }
             String local = ctx.Args() == null ? null : bite(ctx.Args().getText());
@@ -74,33 +104,5 @@ public class PreVisitor {
         protected HashMap<NotTerminal, Set<Integer>> defaultResult() {
             return first;
         }
-    }
-
-    public Set<Integer> calc_first(List<Particle> x) {
-        x = x.stream().filter(Predicate.not(Action.class::isInstance)).toList();
-        return calc_first_b(x);
-    }
-
-    private Set<Integer> calc_first_b(List<Particle> x) {
-        if (x.isEmpty()) {
-            return Collections.singleton(EPS);
-        } else {
-            final Particle p = x.get(0);
-            final String name = p.getText();
-            assert (name.length() > 0);
-            if (p instanceof Literal) {
-                return Collections.singleton(literals.get(p));
-            } else {
-                Set<Integer> next = first.get((NotTerminal) p);
-                if (next.remove(EPS)) {
-                    next.addAll(calc_first_b(x.subList(1, x.size())));
-                }
-                return next;
-            }
-        }
-    }
-
-    public PreVisitor(final ParseTree tree) {
-        new Initializer(tree);
     }
 }

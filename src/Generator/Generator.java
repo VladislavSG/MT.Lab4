@@ -1,6 +1,7 @@
 package Generator;
 
 import Base.*;
+import GrammarParser.GrammarLexer;
 import GrammarParser.GrammarParser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -13,13 +14,14 @@ import java.nio.file.Path;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import GrammarParser.*;
-
 import static org.antlr.v4.runtime.CharStreams.fromFileName;
 
 public class Generator {
-    StringBuilder s;
+    private static final Pattern scope_t1 = Pattern.compile("\\$([a-z]\\w*)::(\\w+)");
+    private static final Pattern scope_t2 = Pattern.compile("\\$(\\d+)::(\\w+)");
+    private static final Pattern scope_t3 = Pattern.compile("\\$(\\w+)");
     private final PreVisitor preVisitor;
+    StringBuilder s;
 
     public Generator(final ParseTree tree) {
         if (tree instanceof GrammarParser.SContext sContext) {
@@ -27,6 +29,48 @@ public class Generator {
             gen(sContext);
         } else {
             throw new IllegalArgumentException("not S nterm");
+        }
+    }
+
+    private static String ctxName(NotTerminal nt) {
+        return nt.getText() + "Context";
+    }
+
+    private static String process(String action, Term term) {
+        String x1 = scope_t1.matcher(action).replaceAll("(($1Context)getContext($1Context.class)).$2");
+        String x2 = scope_t2.matcher(x1).replaceAll(matchResult -> {
+            int pos = Integer.parseInt(matchResult.group(1));
+            String className = ctxName((NotTerminal) term
+                    .getAlternative()
+                    .stream()
+                    .filter(p -> (p instanceof NotTerminal))
+                    .skip(pos)
+                    .findFirst()
+                    .orElseThrow());
+            return "((" + className + ")ctx.children.get($1)).$2";
+        });
+        return scope_t3.matcher(x2).replaceAll("ctx.$1");
+    }
+
+    public static void main(String[] args) {
+        for (final String p : args) {
+            try {
+                CharStream cs = fromFileName("test_grammars/" + p);  //load the file
+                GrammarLexer lexer = new GrammarLexer(cs);  //instantiate a lexer
+                CommonTokenStream tokens = new CommonTokenStream(lexer); //scan stream for tokens
+                GrammarParser parser = new GrammarParser(tokens);  //parse the tokens
+
+                ParseTree tree = parser.s(); // parse the content and get the tree
+                Path path = Path.of("test_out");
+                Files.createDirectories(path);
+                String name = p.substring(0, p.indexOf('.'));
+                try (BufferedWriter writer = Files.newBufferedWriter(path.resolve(name + ".java"))) {
+                    Generator visitor = new Generator(tree);
+                    writer.write(visitor.s.toString());
+                }
+            } catch (IOException e) {
+                System.err.println("error with file " + p);
+            }
         }
     }
 
@@ -47,10 +91,6 @@ public class Generator {
                 .append("protected int nexttoken() throws IOException { return super.nexttoken(lexems); } ");
         genBody();
         s.append('}');
-    }
-
-    private static String ctxName(NotTerminal nt) {
-        return nt.getText() + "Context";
     }
 
     private void genContexts(Rule r) {
@@ -75,9 +115,9 @@ public class Generator {
 
     private void genRule(Rule r) {
         s.append("public ")
-            .append(ctxName(r.left)).append(" ")
-            .append(r.left.getText())
-            .append("(");
+                .append(ctxName(r.left)).append(" ")
+                .append(r.left.getText())
+                .append("(");
         if (r.left.getArguments() != null) {
             s.append(r.left.getArguments());
         }
@@ -111,42 +151,5 @@ public class Generator {
             s.append("break; } ");
         }
         s.append("} exitRule(ctx); return ctx; }");
-    }
-
-
-    private static String process(String action, Term term) {
-        String x = action.replaceAll("\\$([a-z]\\w*)::(\\w+)", "(($1Context)getContext($1Context.class)).$2");
-        return Pattern.compile("\\$(\\d+).(\\w+)").matcher(x).replaceAll(matchResult -> {
-            String className = ctxName(term
-                    .getAlternative()
-                    .stream()
-                    .filter(p -> (p instanceof NotTerminal))
-                    .map(p -> (NotTerminal)p)
-                    .toList()
-                    .get(Integer.parseInt(matchResult.group(1))));
-            return "((" + className +")ctx.children.get($1)).$2";
-        }).replaceAll("\\$(\\w+)", "ctx.$1");
-    }
-
-    public static void main(String[] args) {
-        for (final String p : args) {
-            try {
-                CharStream cs = fromFileName("test_grammars/" + p);  //load the file
-                GrammarLexer lexer = new GrammarLexer(cs);  //instantiate a lexer
-                CommonTokenStream tokens = new CommonTokenStream(lexer); //scan stream for tokens
-                GrammarParser parser = new GrammarParser(tokens);  //parse the tokens
-
-                ParseTree tree = parser.s(); // parse the content and get the tree
-                Path path = Path.of("test_out");
-                Files.createDirectories(path);
-                String name = p.substring(0, p.indexOf('.'));
-                try (BufferedWriter writer = Files.newBufferedWriter(path.resolve(name + ".java"))) {
-                    Generator visitor = new Generator(tree);
-                    writer.write(visitor.s.toString());
-                }
-            } catch (IOException e) {
-                System.err.println("error with file " + p);
-            }
-        }
     }
 }
