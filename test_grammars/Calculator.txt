@@ -1,26 +1,26 @@
 grammar Calculator;
 
 e local[Integer res = 0]
-    : s s0[$0.res] {$res = $1.res;} ;
+    : s s0[$0::res] {$res = $1::res;} ;
 
 s0[Integer acc]
     local[Integer res]
-    : '+' s {acc += $0.res;} s0[acc] {$res = $1.res;}
-    | '-' s {acc -= $0.res;} s0[acc] {$res = $1.res;}
+    : '+' s {acc += $0::res;} s0[acc] {$res = $1::res;}
+    | '-' s {acc -= $0::res;} s0[acc] {$res = $1::res;}
     | {$res = acc;} ;
 
 s local[Integer res] 
-    : m m0[$0.res] {$res = $1.res;} ;
+    : m m0[$0::res] {$res = $1::res;} ;
 
 m0[Integer acc]
     local[Integer res]
-    : '*' m {acc *= $0.res;} m0[acc] {$res = $1.res;}
-    | '/' m {acc /= $0.res;} m0[acc] {$res = $1.res;}
+    : '*' m {acc *= $0::res;} m0[acc] {$res = $1::res;}
+    | '/' m {acc /= $0::res;} m0[acc] {$res = $1::res;}
     | {$res = acc;} ;
 
 m local[Integer res]
-    :  int0 {$res = $0.res;}
-    | '(' e ')' {$res = $0.res;} ;
+    :  int0 {$res = $0::res;}
+    | '(' e ')' {$res = $0::res;} ;
 
 int0 local[Integer res = 0]
     : digit int1 ;

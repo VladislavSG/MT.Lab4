@@ -1,15 +1,15 @@
 package Generator;
 
 import java.io.IOException;
+import java.util.List;
 
 public abstract class AbstractParser {
-    protected final String src;
     protected int pos = 0;
     protected RuleContext curContext;
-    private int curToken = -2;
+    private final List<Integer> tokens;
 
-    public AbstractParser(final String src) {
-        this.src = src;
+    public AbstractParser(final List<Integer> tokens) {
+        this.tokens = tokens;
     }
 
     protected void exitRule(final RuleContext ctx) {
@@ -37,10 +37,7 @@ public abstract class AbstractParser {
     }
 
     protected int peek() throws IOException {
-        if (curToken == -2) {
-            nexttoken();
-        }
-        return curToken;
+        return pos == tokens.size() ? -1 : tokens.get(pos);
     }
 
     protected void expected(int m) throws IOException {
@@ -49,29 +46,8 @@ public abstract class AbstractParser {
         nexttoken();
     }
 
-    protected boolean test(String t) {
-        return src.startsWith(t, pos);
+    protected int nexttoken() throws IOException {
+        return pos == tokens.size() ? -1 : tokens.get(pos++);
     }
 
-    protected abstract int nexttoken() throws IOException;
-
-    //TODO lexer class
-    protected int nexttoken(String[] lexems) throws IOException {
-        if (curToken == -1) {
-            return -1;
-        }
-        if (pos == src.length()) {
-            curToken = -1;
-            return curToken;
-        }
-        for (int i = 0; i < lexems.length; ++i) {
-            if (test(lexems[i])) {
-                pos += lexems[i].length();
-                int prev = curToken;
-                curToken = i;
-                return prev;
-            }
-        }
-        throw new IOException("can't recognize next token");
-    }
 }

@@ -21,19 +21,19 @@ public class Generator {
     private static final Pattern scope_t2 = Pattern.compile("\\$(\\d+)::(\\w+)");
     private static final Pattern scope_t3 = Pattern.compile("\\$(\\w+)");
     private final PreVisitor preVisitor;
-    StringBuilder s;
+    private final String name;
+    StringBuilder p;
+    StringBuilder l;
 
     public Generator(final ParseTree tree) {
         if (tree instanceof GrammarParser.SContext sContext) {
             preVisitor = new PreVisitor(tree);
-            gen(sContext);
+            name = sContext.name().Name().getText();
+            genParser(sContext);
+            genLexer();
         } else {
             throw new IllegalArgumentException("not S nterm");
         }
-    }
-
-    private static String ctxName(NotTerminal nt) {
-        return nt.getText() + "Context";
     }
 
     private static String process(String action, Term term) {
@@ -43,13 +43,17 @@ public class Generator {
             String className = ctxName((NotTerminal) term
                     .getAlternative()
                     .stream()
-                    .filter(p -> (p instanceof NotTerminal))
+                    .filter(p -> p instanceof NotTerminal)
                     .skip(pos)
                     .findFirst()
                     .orElseThrow());
             return "((" + className + ")ctx.children.get($1)).$2";
         });
         return scope_t3.matcher(x2).replaceAll("ctx.$1");
+    }
+
+    private static String ctxName(NotTerminal nt) {
+        return nt.getText() + "Context";
     }
 
     public static void main(String[] args) {
@@ -64,9 +68,11 @@ public class Generator {
                 Path path = Path.of("test_out");
                 Files.createDirectories(path);
                 String name = p.substring(0, p.indexOf('.'));
-                try (BufferedWriter writer = Files.newBufferedWriter(path.resolve(name + ".java"))) {
+                try (BufferedWriter writerP = Files.newBufferedWriter(path.resolve(name + "Parser.java"));
+                     BufferedWriter writerL = Files.newBufferedWriter(path.resolve(name + "Lexer.java"))) {
                     Generator visitor = new Generator(tree);
-                    writer.write(visitor.s.toString());
+                    writerP.write(visitor.p.toString());
+                    writerL.write(visitor.l.toString());
                 }
             } catch (IOException e) {
                 System.err.println("error with file " + p);
@@ -74,34 +80,45 @@ public class Generator {
         }
     }
 
-    private void gen(final GrammarParser.SContext ctx) {
-        String name = ctx.name().Name().getText();
-        s = new StringBuilder("import java.io.IOException; import Generator.RuleContext; public class ")
+    private void genLexer() {
+        String name = this.name + "Lexer";
+        l = new StringBuilder("import java.io.IOException; import java.util.List; import Generator.RuleContext; public class ")
                 .append(name)
-                .append(" extends Generator.AbstractParser { ");
-        s.append("private static String[] lexems = new String[] {");
-        s.append(preVisitor.literals
+                .append(" extends Generator.AbstractLexer { ");
+        l.append("private static String[] lexems = new String[] {");
+        l.append(preVisitor.literals
                 .keySet()
                 .stream()
                 .map(s -> "\"" + s.getText() + "\"")
                 .collect(Collectors.joining(", ")));
-        s.append("}; public ")
+        l.append("}; public ")
                 .append(name)
                 .append("(String src) { super(src); } ")
                 .append("protected int nexttoken() throws IOException { return super.nexttoken(lexems); } ");
+        l.append('}');
+    }
+
+    private void genParser(final GrammarParser.SContext ctx) {
+        String name = this.name + "Parser";
+        p = new StringBuilder("import java.io.IOException; import java.util.List; import Generator.RuleContext; public class ")
+                .append(name)
+                .append(" extends Generator.AbstractParser { ");
+        p.append("public ")
+                .append(name)
+                .append("(List<Integer> tokens) { super(tokens); } ");
         genBody();
-        s.append('}');
+        p.append('}');
     }
 
     private void genContexts(Rule r) {
         String name = ctxName(r.left);
-        s.append("public class ")
+        p.append("public class ")
                 .append(name)
                 .append(" extends RuleContext { ");
         if (r.local != null) {
-            s.append(r.local.replaceAll(",", ";")).append(";");
+            p.append(r.local.replaceAll(",", ";")).append(";");
         }
-        s.append("public ")
+        p.append("public ")
                 .append(name)
                 .append("() { super(curContext); curContext = this; } } ");
     }
@@ -114,42 +131,42 @@ public class Generator {
     }
 
     private void genRule(Rule r) {
-        s.append("public ")
+        p.append("public ")
                 .append(ctxName(r.left)).append(" ")
                 .append(r.left.getText())
                 .append("(");
         if (r.left.getArguments() != null) {
-            s.append(r.left.getArguments());
+            p.append(r.left.getArguments());
         }
         String ctxName = ctxName(r.left);
-        s.append(") throws IOException { ")
+        p.append(") throws IOException { ")
                 .append(ctxName)
                 .append(" ctx = new ").append(ctxName).append("() ; switch(peek()) {");
         for (Term t : r.alts) {
             for (int c : preVisitor.calc_first(t.getAlternative())) {
                 if (c == -1) {
-                    s.append("default: ");
+                    p.append("default: ");
                 } else {
-                    s.append("case(").append(c).append("): ");
+                    p.append("case(").append(c).append("): ");
                 }
             }
-            s.append(" { ");
+            p.append(" { ");
             for (Particle p : t.getAlternative()) {
                 if (p instanceof Literal literal) {
-                    s.append("expected(").append(preVisitor.literals.get(literal)).append("); ");
+                    this.p.append("expected(").append(preVisitor.literals.get(literal)).append("); ");
                 } else if (p instanceof NotTerminal nt) {
-                    s.append(nt.getText()).append("(");
+                    this.p.append(nt.getText()).append("(");
                     String args = nt.getArguments();
                     if (args != null) {
-                        s.append(process(args, t));
+                        this.p.append(process(args, t));
                     }
-                    s.append("); ");
+                    this.p.append("); ");
                 } else {
-                    s.append(process(p.getText(), t));
+                    this.p.append(process(p.getText(), t));
                 }
             }
-            s.append("break; } ");
+            p.append("break; } ");
         }
-        s.append("} exitRule(ctx); return ctx; }");
+        p.append("} exitRule(ctx); return ctx; }");
     }
 }

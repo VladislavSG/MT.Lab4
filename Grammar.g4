@@ -7,7 +7,7 @@ lexem : Name ':' Literal;
 line : left (Local Args)? ':' right ';';
 left : NTerminal Args? ;
 right : term ('|' term)* ;
-term : (left | Literal | Action)* ;
+term : (left | Literal | Action | Name)* ;
 
 Local : 'local' ;
 Name : [A-Z][a-z0-9]* ;
