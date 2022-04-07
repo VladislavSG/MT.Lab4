@@ -12,7 +12,7 @@ public abstract class AbstractLexer {
     private int pos = 0;
 
     public AbstractLexer(final String src) {
-        this.src = src;
+        this.src = src.replaceAll(" ", "");
     }
 
     private boolean test(String t) {

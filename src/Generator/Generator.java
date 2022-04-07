@@ -40,10 +40,10 @@ public class Generator {
         String x1 = scope_t1.matcher(action).replaceAll("(($1Context)getContext($1Context.class)).$2");
         String x2 = scope_t2.matcher(x1).replaceAll(matchResult -> {
             int pos = Integer.parseInt(matchResult.group(1));
-            String className = ctxName((NotTerminal) term
+            String className = ctxName(term
                     .getAlternative()
                     .stream()
-                    .filter(p -> p instanceof NotTerminal)
+                    .filter(p -> !(p instanceof Action))
                     .skip(pos)
                     .findFirst()
                     .orElseThrow());
@@ -52,8 +52,12 @@ public class Generator {
         return scope_t3.matcher(x2).replaceAll("ctx.$1");
     }
 
-    private static String ctxName(NotTerminal nt) {
-        return nt.getText() + "Context";
+    private static String ctxName(Particle p) {
+        if (p instanceof Terminal) {
+            return "Token";
+        } else {
+            return p.getText() + "Context";
+        }
     }
 
     public static void main(String[] args) {

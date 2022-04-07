@@ -5,8 +5,8 @@ e local[Integer res = 0]
 
 s0[Integer acc]
     local[Integer res]
-    : '+' s {acc += $0::res;} s0[acc] {$res = $1::res;}
-    | '-' s {acc -= $0::res;} s0[acc] {$res = $1::res;}
+    : '+' s {acc += $1::res;} s0[acc] {$res = $2::res;}
+    | '-' s {acc -= $1::res;} s0[acc] {$res = $2::res;}
     | {$res = acc;} ;
 
 s local[Integer res] 
@@ -14,24 +14,14 @@ s local[Integer res]
 
 m0[Integer acc]
     local[Integer res]
-    : '*' m {acc *= $0::res;} m0[acc] {$res = $1::res;}
-    | '/' m {acc /= $0::res;} m0[acc] {$res = $1::res;}
+    : '*' m {acc *= $1::res;} m0[acc] {$res = $2::res;}
+    | '/' m {acc /= $1::res;} m0[acc] {$res = $2::res;}
     | {$res = acc;} ;
 
 m local[Integer res]
-    :  int0 {$res = $0::res;}
-    | '(' e ')' {$res = $0::res;} ;
+    :  int1 {$res = $0::res;}
+    | '(' e ')' {$res = $1::res;} ;
 
-int0 local[Integer res = 0]
-    : digit int1 ;
-int1 : digit int1 | ;
-digit : '0' {$int0::res = $int0::res * 10 + 0;}
-      | '1' {$int0::res = $int0::res * 10 + 1;}
-      | '2' {$int0::res = $int0::res * 10 + 2;}
-      | '3' {$int0::res = $int0::res * 10 + 3;}
-      | '4' {$int0::res = $int0::res * 10 + 4;}
-      | '5' {$int0::res = $int0::res * 10 + 5;}
-      | '6' {$int0::res = $int0::res * 10 + 6;}
-      | '7' {$int0::res = $int0::res * 10 + 7;}
-      | '8' {$int0::res = $int0::res * 10 + 8;}
-      | '9' {$int0::res = $int0::res * 10 + 9;} ;
+Digit : !'[0-9]+' ;
+int1 local[Integer res = 0]
+    : Digit {$res = Integer.parseInt($0::getText());} ;

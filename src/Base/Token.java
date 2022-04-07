@@ -1,16 +1,11 @@
 package Base;
 
-public class Token {
-    private final String text;
+public class Token extends Particle {
     private final int id;
 
     public Token(final String text, final int id) {
-        this.text = text;
+        super(text);
         this.id = id;
-    }
-
-    public String getText() {
-        return text;
     }
 
     public int getId() {

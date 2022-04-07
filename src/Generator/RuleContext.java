@@ -5,7 +5,7 @@ import java.util.List;
 
 public class RuleContext {
     public RuleContext parent;
-    public List<RuleContext> children = new ArrayList<>();
+    public List<Object> children = new ArrayList<>();
 
     public RuleContext(final RuleContext parent) {
         this.parent = parent;

@@ -46,12 +46,16 @@ public abstract class AbstractParser {
     protected void expected(int m) throws IOException {
         if (peek().getId() != m)
             throw new IOException("expected " + m + " at pos: " + pos);
-        //curContext.children.add(peek());
         nexttoken();
     }
 
     protected Token nexttoken() throws IOException {
-        return pos == tokens.size() ? EOF : tokens.get(pos++);
+        if (pos == tokens.size()) {
+            return EOF;
+        } else {
+            curContext.children.add(tokens.get(pos));
+            return tokens.get(pos++);
+        }
     }
 
 }
