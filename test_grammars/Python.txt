@@ -1,28 +1,20 @@
 grammar Python;
 
-s : 'lambda' v ':' e ;
-v : n v1 | ;
-v1 : ',' n v1 | ;
+Lambda : 'lambda' ;
+N : !'[x-z][x-z0-9]*' ;
+D : !'[0-9]+' ;
+
+s : Lambda v ':' e ;
+v : N v1 | ;
+v1 : ',' N v1 | ;
 e : a a1 ;
 a : m m1 ;
 a1 : '+' a a1
    | '-' a a1
    | ;
-m : n
-  | d
+m : N
+  | D
   | '(' e ')' ;
 m1 : '*' m m1
    | '/' m m1
    | ;
-n : 'x' ;
-d : digit d | ;
-digit : '0'
-      | '1'
-      | '2'
-      | '3'
-      | '4'
-      | '5'
-      | '6'
-      | '7'
-      | '8'
-      | '9' ;

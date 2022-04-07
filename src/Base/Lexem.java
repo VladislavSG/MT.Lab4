@@ -1,10 +1,10 @@
 package Base;
 
 public class Lexem extends Particle {
-    private final String value;
+    private final Terminal value;
     private final int k;
 
-    public Lexem(final String name, final String value, int k) {
+    public Lexem(final String name, final Terminal value, int k) {
         super(name);
         this.value = value;
         this.k = k;
@@ -14,7 +14,7 @@ public class Lexem extends Particle {
         return k;
     }
 
-    public String getValue() {
+    public Terminal getValue() {
         return value;
     }
 }

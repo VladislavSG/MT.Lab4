@@ -1,6 +1,5 @@
 // Generated from D:/prog/ITMO/5-term/MT/Lab4\Grammar.g4 by ANTLR 4.9.2
 package GrammarParser;
-
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -50,6 +49,14 @@ public interface GrammarVisitor<T> extends ParseTreeVisitor<T> {
      * @return the visitor result
      */
     T visitLine(GrammarParser.LineContext ctx);
+
+    /**
+     * Visit a parse tree produced by {@link GrammarParser#pravilo}.
+     *
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    T visitPravilo(GrammarParser.PraviloContext ctx);
 
     /**
      * Visit a parse tree produced by {@link GrammarParser#left}.

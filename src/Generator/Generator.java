@@ -82,30 +82,38 @@ public class Generator {
 
     private void genLexer() {
         String name = this.name + "Lexer";
-        l = new StringBuilder("import java.io.IOException; import java.util.List; import Generator.RuleContext; public class ")
+        l = new StringBuilder("import java.io.IOException;" +
+                "import java.util.List;" +
+                "import Generator.RuleContext;" +
+                "import Base.*;" +
+                "public class ")
                 .append(name)
                 .append(" extends Generator.AbstractLexer { ");
-        l.append("private static String[] lexems = new String[] {");
+        l.append("private static Terminal[] lexems = new Terminal[] {");
         l.append(preVisitor.literals
                 .keySet()
                 .stream()
-                .map(s -> "\"" + s.getText() + "\"")
+                .map(Terminal::textConstructor)
                 .collect(Collectors.joining(", ")));
         l.append("}; public ")
                 .append(name)
                 .append("(String src) { super(src); } ")
-                .append("protected int nexttoken() throws IOException { return super.nexttoken(lexems); } ");
+                .append("protected Token nexttoken() throws IOException { return super.nexttoken(lexems); } ");
         l.append('}');
     }
 
     private void genParser(final GrammarParser.SContext ctx) {
         String name = this.name + "Parser";
-        p = new StringBuilder("import java.io.IOException; import java.util.List; import Generator.RuleContext; public class ")
+        p = new StringBuilder("import java.io.IOException;" +
+                "import java.util.List;" +
+                "import Generator.RuleContext;" +
+                "import Base.*;" +
+                "public class ")
                 .append(name)
                 .append(" extends Generator.AbstractParser { ");
         p.append("public ")
                 .append(name)
-                .append("(List<Integer> tokens) { super(tokens); } ");
+                .append("(List<Token> tokens) { super(tokens); } ");
         genBody();
         p.append('}');
     }
@@ -141,7 +149,7 @@ public class Generator {
         String ctxName = ctxName(r.left);
         p.append(") throws IOException { ")
                 .append(ctxName)
-                .append(" ctx = new ").append(ctxName).append("() ; switch(peek()) {");
+                .append(" ctx = new ").append(ctxName).append("() ; switch(peek().getId()) {");
         for (Term t : r.alts) {
             for (int c : preVisitor.calc_first(t.getAlternative())) {
                 if (c == -1) {
@@ -152,8 +160,8 @@ public class Generator {
             }
             p.append(" { ");
             for (Particle p : t.getAlternative()) {
-                if (p instanceof Literal literal) {
-                    this.p.append("expected(").append(preVisitor.literals.get(literal)).append("); ");
+                if (p instanceof Terminal terminal) {
+                    this.p.append("expected(").append(preVisitor.literals.get(terminal)).append("); ");
                 } else if (p instanceof NotTerminal nt) {
                     this.p.append(nt.getText()).append("(");
                     String args = nt.getArguments();

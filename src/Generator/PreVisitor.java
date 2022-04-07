@@ -17,7 +17,8 @@ public class PreVisitor {
     public static final Integer EPS = -1;
     public final HashMap<NotTerminal, Set<Integer>> first = new HashMap<>();
     public final List<Rule> lines = new ArrayList<>();
-    public final Map<Literal, Integer> literals = new LinkedHashMap<>();
+    public final Map<Terminal, Integer> literals = new LinkedHashMap<>();
+    public final Map<String, Terminal> lexems = new HashMap<>();
 
     public PreVisitor(final ParseTree tree) {
         new Initializer(tree);
@@ -35,7 +36,7 @@ public class PreVisitor {
             final Particle p = x.get(0);
             final String name = p.getText();
             assert (name.length() > 0);
-            if (p instanceof Literal) {
+            if (p instanceof Terminal) {
                 return Collections.singleton(literals.get(p));
             } else {
                 Set<Integer> next = first.get((NotTerminal) p);
@@ -65,16 +66,45 @@ public class PreVisitor {
             }
         }
 
+        private Terminal update(Terminal t) {
+            int newId = literals.size();
+            Integer oldId = literals.putIfAbsent(t, newId);
+            t.setId(oldId == null ? newId : oldId);
+            return t;
+        }
+
+        private Terminal rangeConstruct(String text) {
+            return update(new Range(bite(text, 2, 1)));
+        }
+
+        private Terminal literalConstruct(String text) {
+            return update(new Literal(bite(text)));
+        }
+
         public Particle convert(final ParseTree tree) {
-            if (tree instanceof TerminalNode) {
-                String s = bite(tree.getText());
-                if (((TerminalNode) tree).getSymbol().getType() == GrammarLexer.Action) {
-                    return new Action(s);
-                }
-                if (((TerminalNode) tree).getSymbol().getType() == GrammarLexer.Literal) {
-                    Literal l = new Literal(s);
-                    literals.putIfAbsent(l, literals.size());
-                    return l;
+            if (tree instanceof TerminalNode terminalNode) {
+                String text = tree.getText();
+                int type = terminalNode.getSymbol().getType();
+                switch (type) {
+                    case (GrammarLexer.Action): {
+                        return new Action(bite(text));
+                    }
+                    case (GrammarLexer.Literal): {
+                        return literalConstruct(text);
+                    }
+                    case (GrammarLexer.Range): {
+                        return rangeConstruct(text);
+                    }
+                    case (GrammarLexer.Name): {
+                        Terminal res = lexems.get(text);
+                        if (res == null) {
+                            throw new RuntimeException("unknown lexem");
+                        }
+                        return res;
+                    }
+                    default: {
+                        throw new IllegalArgumentException();
+                    }
                 }
             }
             if (tree instanceof GrammarParser.LeftContext leftContext) {
@@ -84,7 +114,7 @@ public class PreVisitor {
         }
 
         @Override
-        public HashMap<NotTerminal, Set<Integer>> visitLine(final GrammarParser.LineContext ctx) {
+        public HashMap<NotTerminal, Set<Integer>> visitPravilo(final GrammarParser.PraviloContext ctx) {
             NotTerminal left = new NotTerminal(ctx.left());
             first.computeIfAbsent(left, k -> new HashSet<>());
             List<Term> alts = new ArrayList<>();
@@ -97,7 +127,20 @@ public class PreVisitor {
             }
             String local = ctx.Args() == null ? null : bite(ctx.Args().getText());
             lines.add(new Rule(left, alts, local));
-            return super.visitLine(ctx);
+            return super.visitPravilo(ctx);
+        }
+
+        @Override
+        public HashMap<NotTerminal, Set<Integer>> visitLexem(final GrammarParser.LexemContext ctx) {
+            TerminalNode literal = ctx.Literal();
+            Terminal t;
+            if (literal == null) {
+                t = rangeConstruct(ctx.Range().getText());
+            } else {
+                t = literalConstruct(ctx.Literal().getText());
+            }
+            lexems.put(ctx.Name().getText(), t);
+            return super.visitLexem(ctx);
         }
 
         @Override
