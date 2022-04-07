@@ -20,7 +20,8 @@ m0[Integer acc]
 
 m local[Integer res]
     :  int1 {$res = $0::res;}
-    | '(' e ')' {$res = $1::res;} ;
+    | '(' e ')' {$res = $1::res;}
+    | '|' e '|' {$res = Math.abs($1::res);} ;
 
 Digit : !'[0-9]+' ;
 int1 local[Integer res = 0]
